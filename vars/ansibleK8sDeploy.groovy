@@ -1,30 +1,49 @@
-def call(String configFilePath = 'resources/ansible_config.yaml') {
-    // Load configuration
-    def config = readYaml file: "${configFilePath}"
+def call(Map config = [:]) {
 
-    stage('Clone Repo') {
-        echo "Cloning Ansible role from GitHub..."
-        git branch: 'saransh', url: 'https://github.com/OT-MyGurukulam/Ansible_33.git'
-    }
+    pipeline {
+        agent any
 
-    if (config.KEEP_APPROVAL_STAGE) {
-        stage('User Approval') {
-            input message: "Deploy Kubernetes to ${config.ENVIRONMENT}?", ok: 'Deploy'
+        environment {
+            SLACK_CHANNEL = config.SLACK_CHANNEL_NAME
+            ENV = config.ENVIRONMENT
+            CODE_PATH = config.CODE_BASE_PATH
+            MESSAGE = config.ACTION_MESSAGE
+            KEEP_APPROVAL = config.KEEP_APPROVAL_STAGE
+        }
+
+        stages {
+
+            stage('Clone Repo') {
+                steps {
+                    git url: 'https://github.com/Saranshrai23/practice-git.git',
+                        branch: 'master'
+                }
+            }
+
+            stage('User Approval') {
+                when {
+                    expression { KEEP_APPROVAL == true }
+                }
+                steps {
+                    input message: "Deploy to ${ENV} environment?"
+                }
+            }
+
+            stage('Ansible Playbook Execution') {
+                steps {
+                    sh """
+                    cd ${CODE_PATH}
+                    ansible-playbook playbook.yml
+                    """
+                }
+            }
+
+            stage('Notification') {
+                steps {
+                    echo "Sending notification to ${SLACK_CHANNEL}"
+                    echo "${MESSAGE}"
+                }
+            }
         }
     }
-
-    stage('Execute Ansible Playbook') {
-        echo "Running Ansible playbook..."
-        sh """
-            ansible-playbook -i inventory Assignment-5/kuberole/playbook.yml
-        """
-    }
-
-    stage('Notification') {
-        echo "Sending notification to Slack channel ${config.SLACK_CHANNEL_NAME}"
-        slackSend channel: config.SLACK_CHANNEL_NAME, 
-                  color: 'good', 
-                  message: config.ACTION_MESSAGE
-    }
 }
-
