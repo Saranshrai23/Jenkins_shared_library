@@ -1,5 +1,5 @@
-SLACK_CHANNEL_NAME: "#build-status"
+SLACK_CHANNEL_NAME: "build-status"
 ENVIRONMENT: "prod"
-CODE_BASE_PATH: "env/prod"
-ACTION_MESSAGE: "Kubernetes deployment started"
+CODE_BASE_PATH: "Assignment-5"
+ACTION_MESSAGE: "Kubernetes deployment triggered"
 KEEP_APPROVAL_STAGE: true
